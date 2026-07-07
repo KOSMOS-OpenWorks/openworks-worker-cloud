@@ -51,17 +51,6 @@ class ControlClient:
         self._session.auth = (user, token)
         self._session.verify = ca_cert if ca_cert else verify_tls
         self._interval = 5  # start in the middle
-        self._pipelines_url = f"{self.base_url}/api/v0/jobs/pipelines"
-
-    def check_pipelines(self, my_types: list[str]) -> bool:
-        """Check if our pipeline types are registered in the engine."""
-        try:
-            resp = self._session.get(self._pipelines_url, timeout=10)
-            resp.raise_for_status()
-            registered = [p.get("jobType", p.get("id", "")) for p in resp.json().get("pipelines", [])]
-            return all(t in registered for t in my_types)
-        except Exception:
-            return False
 
     def poll(self, status: list[dict] | None = None, data: dict | None = None) -> PollResult:
         """Execute one poll tick. Returns assignments, cancellations, and matrix info."""
