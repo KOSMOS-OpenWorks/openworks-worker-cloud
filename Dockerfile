@@ -9,9 +9,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     lmodern \
     zip \
     unzip \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# SDK (control client, worker daemon, JobFS)
+RUN pip install --no-cache-dir git+https://codeberg.org/kosmos-openworks/openworks-sdk.git
 
 COPY worker/ /app/
 RUN pip install --no-cache-dir -e .

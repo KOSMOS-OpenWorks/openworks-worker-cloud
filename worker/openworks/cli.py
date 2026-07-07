@@ -1,4 +1,4 @@
-"""CLI entry point for the OpenWorks worker daemon."""
+"""CLI entry point for the OpenWorks cloud worker daemon."""
 
 import glob
 import logging
@@ -7,9 +7,9 @@ import sys
 
 import yaml
 
-from .client import ControlClient
-from .worker import Worker
-from .executors import pandoc, zip as zip_exec, unzip as unzip_exec, test_echo, build_pod, build_web
+from openworks.client import ControlClient
+from openworks.worker import Worker
+from .executors import pandoc, zip as zip_exec, unzip as unzip_exec, test_echo
 
 
 def load_pipelines(dirs: list[str]) -> dict:
@@ -69,8 +69,6 @@ def main():
         "zip-create": zip_exec.execute,
         "unzip": unzip_exec.execute,
         "test-echo": test_echo.execute,
-        "build-pod": build_pod.execute,
-        "build-web": build_web.execute,
     }
 
     # Load pipeline definitions from YAML dirs

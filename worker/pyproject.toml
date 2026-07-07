@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openworks-worker"
-version = "0.1.0"
-description = "OpenWorks reference worker — pipelining of OpenCloud's Kosmos Edition"
+version = "0.2.0"
+description = "OpenWorks cloud worker — zip, md-to-pdf, tar, unzip"
 requires-python = ">=3.11"
 dependencies = [
-    "requests>=2.31",
+    "openworks-sdk",
     "pyyaml>=6.0",
 ]
 
