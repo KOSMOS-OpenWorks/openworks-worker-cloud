@@ -5,12 +5,16 @@ OpenWorks Worker Daemon — picks jobs, dispatches to executors, reports status.
 import logging
 import signal
 import threading
+import time
 from datetime import datetime
 
 from .client import ControlClient, JobAssignment
 from .fs import JobFS
 
 logger = logging.getLogger("openworks.worker")
+
+# How often to re-check if our pipelines are still registered (seconds)
+PIPELINE_CHECK_INTERVAL = 60
 
 
 class Worker:
@@ -27,7 +31,7 @@ class Worker:
         self.executors = executors
         self.pipelines = pipelines
         self._registered = False
-        self._reg_state = "probe"  # probe → register → ready
+        self._next_pipeline_check = 0  # check immediately on first tick
         self._running = True
         self._active_jobs: dict[str, threading.Thread] = {}
         self._job_status: dict[str, dict] = {}  # job_id → status to report
@@ -66,41 +70,26 @@ class Worker:
                 if s.get("status") not in ("completed", "failed")
             }
 
-        # Pipeline registration: 3-phase state machine
-        # Phase 1 (PROBE):  poll without pipelines → check if engine knows us
-        # Phase 2 (REGISTER): engine denied us → send pipeline defs
-        # Phase 3 (READY):  engine accepted → normal operation
-        #
-        # If engine restarts and forgets us (denied while READY) → back to REGISTER
+        # Pipeline registration:
+        # Periodically check GET /pipelines to see if the engine has our definitions.
+        # If not (engine restarted, or first connect) → send them with the next poll.
         data = None
-        if self._reg_state == "register" and self.pipelines:
+        if self.pipelines and not self._registered:
             data = {"pipelines": self.pipelines}
 
         result = self.client.poll(status=status_reports, data=data)
 
-        if self._reg_state == "probe":
-            if result.slots:
-                # Engine already knows us
-                self._reg_state = "ready"
-                self._registered = True
-                logger.info("engine knows us, %d slot type(s)", len(result.slots))
-            elif result.denied:
-                # Engine doesn't know us — send pipelines next tick
-                self._reg_state = "register"
-                logger.info("engine doesn't know us, registering next tick")
-        elif self._reg_state == "register":
-            if result.slots:
-                self._reg_state = "ready"
-                self._registered = True
-                logger.info("registered %d pipeline(s) with server", len(self.pipelines))
-            else:
-                logger.warning("registration failed, retrying")
-        elif self._reg_state == "ready":
-            if not result.slots and result.denied:
-                # Engine forgot us (restart?) — re-register
-                self._reg_state = "register"
+        if data and result.slots:
+            self._registered = True
+            self._next_pipeline_check = time.time() + PIPELINE_CHECK_INTERVAL
+            logger.info("registered %d pipeline(s) with server", len(self.pipelines))
+
+        # Periodic check: are our pipelines still in the engine?
+        if self.pipelines and self._registered and time.time() >= self._next_pipeline_check:
+            self._next_pipeline_check = time.time() + PIPELINE_CHECK_INTERVAL
+            if not self.client.check_pipelines(list(self.pipelines.keys())):
                 self._registered = False
-                logger.info("engine lost our pipelines, re-registering next tick")
+                logger.info("engine lost our pipelines, will re-register")
 
         # Handle cancellations
         for job_id in result.cancellations:
