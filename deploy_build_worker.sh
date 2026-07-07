@@ -5,32 +5,37 @@ set -euo pipefail
 #
 # Usage: ./deploy_build_worker.sh [TAG]
 #
-# Config via env or DIST:
-#   OC_URL       OpenCloud URL (default: https://cloud.brandis.eu)
-#   OC_USER      Worker user (required)
-#   OC_TOKEN     Worker app token (required)
-#   OC_CAPACITY  Parallel job capacity (default: 1)
-#   OC_PICK      Job types to pick (default: build-pod,build-web)
+# Config lives on the host at /data/openworks/build-worker.env
+# Created once, never overwritten by deploy.
+#
+# First-time setup on host:
+#   mkdir -p /data/openworks
+#   cat > /data/openworks/build-worker.env <<'EOF'
+#   OPENWORKS_URL=https://cloud.brandis.eu
+#   OPENWORKS_USER=witt
+#   OPENWORKS_TOKEN=staunch dictate mating upfront earphone pushchair
+#   OPENWORKS_PICK=build-pod,build-web
+#   OPENWORKS_CAPACITY=1
+#   EOF
 
 IMAGE="codeberg.org/kosmos-openworks/openworks-build-worker"
 TAG="${1:-latest}"
 HOST="db.xwork.cloud"
 CONTAINER="openworks-build-worker"
-
-OC_URL="${OC_URL:-https://cloud.brandis.eu}"
-OC_USER="${OC_USER:?OC_USER required}"
-OC_TOKEN="${OC_TOKEN:?OC_TOKEN required}"
-OC_CAPACITY="${OC_CAPACITY:-1}"
-OC_PICK="${OC_PICK:-build-pod,build-web}"
+ENV_FILE="/data/openworks/build-worker.env"
 
 echo "=== Deploy build-worker to ${HOST} ==="
 echo "  Image:    ${IMAGE}:${TAG}"
-echo "  URL:      ${OC_URL}"
-echo "  User:     ${OC_USER}"
-echo "  Capacity: ${OC_CAPACITY}"
-echo "  Pick:     ${OC_PICK}"
+echo "  Config:   ${HOST}:${ENV_FILE}"
 
 ssh "root@${HOST}" "
+    # Check config exists
+    if [ ! -f ${ENV_FILE} ]; then
+        echo 'ERROR: ${ENV_FILE} not found on host.'
+        echo 'Create it first (see deploy_build_worker.sh header for template).'
+        exit 1
+    fi
+
     # Pull image
     podman pull ${IMAGE}:${TAG}
 
@@ -41,18 +46,12 @@ ssh "root@${HOST}" "
     # Create build workspace
     mkdir -p /data/builderspace
 
-    # Run with:
-    # - privileged (buildah needs it)
-    # - /data/builderspace mounted for temp build files
+    # Run with env-file from host + build workspace mount
     podman run -d --name ${CONTAINER} \
         --privileged \
         --restart unless-stopped \
+        --env-file ${ENV_FILE} \
         -v /data/builderspace:/build:rw \
-        -e OPENWORKS_URL=${OC_URL} \
-        -e OPENWORKS_USER=${OC_USER} \
-        -e 'OPENWORKS_TOKEN=${OC_TOKEN}' \
-        -e OPENWORKS_PICK=${OC_PICK} \
-        -e OPENWORKS_CAPACITY=${OC_CAPACITY} \
         ${IMAGE}:${TAG}
 
     sleep 3
