@@ -29,16 +29,19 @@ class JobFS:
     """WebDAV filesystem scoped to a job share."""
 
     def __init__(self, webdav_url: str, token: str, deadline: datetime | None = None,
-                 verify_tls: bool | str = True):
+                 verify_tls: bool | str = True, username: str | None = None):
         self.base_url = webdav_url.rstrip("/")
         self.token = token
         self.deadline = deadline
         self._session = requests.Session()
-        # Public shares use password as basic auth (user=public, pass=token)
-        # Regular shares use Bearer token
-        if "/public-files/" in webdav_url:
+        if username:
+            # Explicit username: basic auth (user + app-token/password)
+            self._session.auth = (username, token)
+        elif "/public-files/" in webdav_url:
+            # Public shares: basic auth (user=public, pass=share-token)
             self._session.auth = ("public", token)
         else:
+            # Bearer token (ephemeral share tokens)
             self._session.headers["Authorization"] = f"Bearer {token}"
         self._session.verify = verify_tls
 
