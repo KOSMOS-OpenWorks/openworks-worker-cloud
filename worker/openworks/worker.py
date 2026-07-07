@@ -65,12 +65,21 @@ class Worker:
                 if s.get("status") not in ("completed", "failed")
             }
 
-        # Send pipeline definitions on first poll
+        # Pipeline registration: 3-phase
+        # 1. Poll without pipelines to check if we have slots (= engine knows us)
+        # 2. If denied (no slots) → we're unknown, poll again with pipeline defs
+        # 3. Once slots come back → registered
         data = None
         if self.pipelines and not self._registered:
             data = {"pipelines": self.pipelines}
 
         result = self.client.poll(status=status_reports, data=data)
+
+        if self._registered and not result.slots and result.denied:
+            # Engine forgot us (restart?) — re-register
+            self._registered = False
+            logger.info("engine lost our pipelines, re-registering")
+
         if data and result.slots:
             self._registered = True
             logger.info("registered %d pipeline(s) with server", len(self.pipelines))
