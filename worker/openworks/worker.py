@@ -27,6 +27,7 @@ class Worker:
         self.executors = executors
         self.pipelines = pipelines
         self._registered = False
+        self._reg_state = "probe"  # probe → register → ready
         self._running = True
         self._active_jobs: dict[str, threading.Thread] = {}
         self._job_status: dict[str, dict] = {}  # job_id → status to report
@@ -65,24 +66,41 @@ class Worker:
                 if s.get("status") not in ("completed", "failed")
             }
 
-        # Pipeline registration: 3-phase
-        # 1. Poll without pipelines to check if we have slots (= engine knows us)
-        # 2. If denied (no slots) → we're unknown, poll again with pipeline defs
-        # 3. Once slots come back → registered
+        # Pipeline registration: 3-phase state machine
+        # Phase 1 (PROBE):  poll without pipelines → check if engine knows us
+        # Phase 2 (REGISTER): engine denied us → send pipeline defs
+        # Phase 3 (READY):  engine accepted → normal operation
+        #
+        # If engine restarts and forgets us (denied while READY) → back to REGISTER
         data = None
-        if self.pipelines and not self._registered:
+        if self._reg_state == "register" and self.pipelines:
             data = {"pipelines": self.pipelines}
 
         result = self.client.poll(status=status_reports, data=data)
 
-        if self._registered and not result.slots and result.denied:
-            # Engine forgot us (restart?) — re-register
-            self._registered = False
-            logger.info("engine lost our pipelines, re-registering")
-
-        if data and result.slots:
-            self._registered = True
-            logger.info("registered %d pipeline(s) with server", len(self.pipelines))
+        if self._reg_state == "probe":
+            if result.slots:
+                # Engine already knows us
+                self._reg_state = "ready"
+                self._registered = True
+                logger.info("engine knows us, %d slot type(s)", len(result.slots))
+            elif result.denied:
+                # Engine doesn't know us — send pipelines next tick
+                self._reg_state = "register"
+                logger.info("engine doesn't know us, registering next tick")
+        elif self._reg_state == "register":
+            if result.slots:
+                self._reg_state = "ready"
+                self._registered = True
+                logger.info("registered %d pipeline(s) with server", len(self.pipelines))
+            else:
+                logger.warning("registration failed, retrying")
+        elif self._reg_state == "ready":
+            if not result.slots and result.denied:
+                # Engine forgot us (restart?) — re-register
+                self._reg_state = "register"
+                self._registered = False
+                logger.info("engine lost our pipelines, re-registering next tick")
 
         # Handle cancellations
         for job_id in result.cancellations:
