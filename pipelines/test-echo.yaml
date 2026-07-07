@@ -1,0 +1,15 @@
+pipelines:
+  test-echo:
+    label: "Test (Echo)"
+    icon: "bug"
+    source_types:
+      - "text/plain"
+    target:
+      extension: ".result.json"
+      location: "same"
+      create_dirs: false
+    job:
+      type: "test-echo"
+      timeout: 60s
+      params: {}
+    notification: "toast"

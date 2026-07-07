@@ -1,0 +1,31 @@
+FROM docker.io/library/golang:1.26-alpine AS base
+
+# Build tools
+RUN apk add --no-cache \
+    bash git curl make gcc musl-dev libc-dev \
+    nodejs npm python3 py3-pip py3-requests \
+    podman buildah containers-common fuse-overlayfs iptables \
+    rsync vips-dev
+
+# pnpm
+RUN npm install -g pnpm@11
+
+# Python worker
+COPY worker/ /app/
+WORKDIR /app
+RUN pip install --no-cache-dir --break-system-packages -e .
+
+# Container engine config
+RUN mkdir -p /etc/containers /build/tmp && \
+    printf '[storage]\ndriver = "overlay"\n[storage.options.overlay]\nmount_program = "/usr/bin/fuse-overlayfs"\n' \
+        > /etc/containers/storage.conf && \
+    printf '[engine]\nimage_copy_tmp_dir = "/build/tmp"\n' \
+        > /etc/containers/containers.conf
+
+ENV TMPDIR=/build/tmp
+
+# Git config
+RUN git config --global advice.detachedHead false
+
+WORKDIR /build
+ENTRYPOINT ["openworks-worker"]
