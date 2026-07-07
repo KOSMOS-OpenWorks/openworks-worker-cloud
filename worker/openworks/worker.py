@@ -123,13 +123,11 @@ class Worker:
             origin = assignment.origin or assignment.params.get("origin") or {}
             origin_url = origin.get("webdav_url", "") or assignment.params.get("origin_url", "")
             origin_token = origin.get("password", origin.get("token", "")) or assignment.params.get("origin_password", "")
-            origin_username = origin.get("username") or assignment.params.get("origin_username")
             fs = JobFS(
                 webdav_url=origin_url,
                 token=origin_token,
                 deadline=assignment.valid_till,
                 verify_tls=tls_verify,
-                username=origin_username,
             )
 
             # Build destination FS if different from origin
