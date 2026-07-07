@@ -5,16 +5,12 @@ OpenWorks Worker Daemon — picks jobs, dispatches to executors, reports status.
 import logging
 import signal
 import threading
-import time
 from datetime import datetime
 
 from .client import ControlClient, JobAssignment
 from .fs import JobFS
 
 logger = logging.getLogger("openworks.worker")
-
-# How often to re-check if our pipelines are still registered (seconds)
-PIPELINE_CHECK_INTERVAL = 60
 
 
 class Worker:
@@ -31,7 +27,6 @@ class Worker:
         self.executors = executors
         self.pipelines = pipelines
         self._registered = False
-        self._next_pipeline_check = 0  # check immediately on first tick
         self._running = True
         self._active_jobs: dict[str, threading.Thread] = {}
         self._job_status: dict[str, dict] = {}  # job_id → status to report
@@ -70,26 +65,15 @@ class Worker:
                 if s.get("status") not in ("completed", "failed")
             }
 
-        # Pipeline registration:
-        # Periodically check GET /pipelines to see if the engine has our definitions.
-        # If not (engine restarted, or first connect) → send them with the next poll.
+        # Send pipeline definitions on first poll
         data = None
         if self.pipelines and not self._registered:
             data = {"pipelines": self.pipelines}
 
         result = self.client.poll(status=status_reports, data=data)
-
         if data and result.slots:
             self._registered = True
-            self._next_pipeline_check = time.time() + PIPELINE_CHECK_INTERVAL
             logger.info("registered %d pipeline(s) with server", len(self.pipelines))
-
-        # Periodic check: are our pipelines still in the engine?
-        if self.pipelines and self._registered and time.time() >= self._next_pipeline_check:
-            self._next_pipeline_check = time.time() + PIPELINE_CHECK_INTERVAL
-            if not self.client.check_pipelines(list(self.pipelines.keys())):
-                self._registered = False
-                logger.info("engine lost our pipelines, will re-register")
 
         # Handle cancellations
         for job_id in result.cancellations:
