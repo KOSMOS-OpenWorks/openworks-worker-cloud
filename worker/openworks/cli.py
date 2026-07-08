@@ -3,11 +3,10 @@
 import glob
 import logging
 import os
-import sys
 
 import yaml
 
-from openworks.client import ControlClient
+from openworks.config import clients_from_env
 from openworks.worker import Worker
 from .executors import pandoc, zip as zip_exec, unzip as unzip_exec, test_echo
 
@@ -33,36 +32,9 @@ def main():
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    url = os.environ.get("OPENWORKS_URL", "")
-    user = os.environ.get("OPENWORKS_USER", "")
-    token = os.environ.get("OPENWORKS_TOKEN", "")
-    pick = os.environ.get("OPENWORKS_PICK", "md-to-pdf,zip-create,test-echo")
-    capacity = int(os.environ.get("OPENWORKS_CAPACITY", "2"))
-    insecure = os.environ.get("OPENWORKS_INSECURE", "").lower() in ("1", "true", "yes")
+    clients, capacity = clients_from_env()
+
     pipeline_dirs = os.environ.get("OPENWORKS_PIPELINES", "").split(":") if os.environ.get("OPENWORKS_PIPELINES") else []
-
-    if not url:
-        logging.error("OPENWORKS_URL required")
-        sys.exit(1)
-
-    if not url.startswith("https://") and not insecure:
-        logging.error("OPENWORKS_URL must use https://. Set OPENWORKS_INSECURE=1 for dev.")
-        sys.exit(1)
-
-    if not user or not token:
-        logging.error("OPENWORKS_USER and OPENWORKS_TOKEN required")
-        sys.exit(1)
-
-    pick_list = [t.strip() for t in pick.split(",")]
-
-    client = ControlClient(
-        base_url=url,
-        user=user,
-        token=token,
-        pick=pick_list,
-        capacity=capacity,
-        verify_tls=not insecure,
-    )
 
     executors = {
         "md-to-pdf": pandoc.execute,
@@ -71,12 +43,11 @@ def main():
         "test-echo": test_echo.execute,
     }
 
-    # Load pipeline definitions from YAML dirs
     pipelines = load_pipelines(pipeline_dirs) if pipeline_dirs else None
     if pipelines:
-        logging.info("loaded %d pipeline definition(s) from %s", len(pipelines), pipeline_dirs)
+        logging.info("loaded %d pipeline definition(s)", len(pipelines))
 
-    worker = Worker(client=client, executors=executors, pipelines=pipelines)
+    worker = Worker(clients=clients, executors=executors, pipelines=pipelines, capacity=capacity)
     worker.run()
 
 
