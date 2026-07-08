@@ -8,7 +8,7 @@ Poll → Pick → Share → Read → Write → Complete.
 import json
 from datetime import datetime
 
-from ..fs import JobFS
+from openworks.fs import JobFS
 
 
 def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stage=None) -> dict:

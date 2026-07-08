@@ -5,7 +5,7 @@ import logging
 import zipfile
 import tempfile
 
-from ..fs import JobFS
+from openworks.fs import JobFS
 
 logger = logging.getLogger("openworks.zip")
 

@@ -4,7 +4,7 @@ import os
 import zipfile
 import tempfile
 
-from ..fs import JobFS
+from openworks.fs import JobFS
 
 
 def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stage=None) -> dict:
