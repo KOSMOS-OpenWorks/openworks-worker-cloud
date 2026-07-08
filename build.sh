@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE="codeberg.org/kosmos-eu/openworks-worker"
+IMAGE="codeberg.org/kosmos-openworks/openworks-worker-cloud"
 TAG="$(date +%Y%m%d-%H%M)"
 
 echo "=== Build openworks-worker: ${IMAGE}:${TAG} ==="
