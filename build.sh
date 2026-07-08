@@ -8,9 +8,9 @@ TAG="$(date +%Y%m%d-%H%M)"
 echo "=== Build openworks-worker: ${IMAGE}:${TAG} ==="
 
 if command -v buildah &>/dev/null; then
-    TMPDIR="${TMPDIR:-/tmp}" buildah bud --network=host --security-opt label=disable -t "${IMAGE}:${TAG}" "$SCRIPT_DIR"
+    TMPDIR="${TMPDIR:-/tmp}" buildah bud --no-cache --network=host --security-opt label=disable -t "${IMAGE}:${TAG}" "$SCRIPT_DIR"
 else
-    TMPDIR="${TMPDIR:-/tmp}" podman build --network=host --security-opt label=disable -t "${IMAGE}:${TAG}" "$SCRIPT_DIR"
+    TMPDIR="${TMPDIR:-/tmp}" podman build --no-cache --network=host --security-opt label=disable -t "${IMAGE}:${TAG}" "$SCRIPT_DIR"
 fi
 
 echo ""
