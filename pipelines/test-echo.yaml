@@ -4,6 +4,8 @@ pipelines:
     icon: "bug"
     source_types:
       - "text/plain"
+    shares:
+      type: "parentDir"
     target:
       extension: ".result.json"
       location: "same"

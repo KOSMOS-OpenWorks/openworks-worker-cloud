@@ -6,34 +6,30 @@ pipelines:
       - "application/zip"
       - "application/x-zip-compressed"
       - "application/java-archive"
+    shares:
+      type: "parentDir"
+    job:
+      type: "unzip"
+      timeout: 300s
     target:
       extension: ""
-      location: "subfolder:{{source.nameWithoutExt}}"
-      create_dirs: true
-    user_choosable_target: false
-    batch: false
-    executor:
-      type: exec
-      command: "unzip"
-      args: ["-o", "{{source}}", "-d", "{{target_dir}}"]
-      timeout: 300s
+      location: "same"
+    notification: "toast"
 
   zip-create:
     label: "Als ZIP komprimieren"
     icon: "file-zip"
     source_types:
       - "*"
+    shares:
+      type: "parentDir"
+    job:
+      type: "zip-create"
+      timeout: 300s
     target:
       extension: ".zip"
       location: "same"
-      create_dirs: false
-    user_choosable_target: false
-    batch: true
-    executor:
-      type: exec
-      command: "zip"
-      args: ["-r", "{{target}}", "{{source}}"]
-      timeout: 300s
+    notification: "toast"
 
   tar-extract:
     label: "Archiv entpacken"
@@ -43,14 +39,12 @@ pipelines:
       - "application/gzip"
       - "application/x-bzip2"
       - "application/x-xz"
+    shares:
+      type: "parentDir"
+    job:
+      type: "tar-extract"
+      timeout: 300s
     target:
       extension: ""
-      location: "subfolder:{{source.nameWithoutExt}}"
-      create_dirs: true
-    user_choosable_target: false
-    batch: false
-    executor:
-      type: exec
-      command: "tar"
-      args: ["xf", "{{source}}", "-C", "{{target_dir}}"]
-      timeout: 300s
+      location: "same"
+    notification: "toast"

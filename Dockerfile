@@ -20,4 +20,6 @@ RUN pip install --no-cache-dir git+https://codeberg.org/kosmos-openworks/openwor
 COPY worker/ /app/
 RUN pip install --no-cache-dir -e .
 
+COPY pipelines/ /app/pipelines/
+
 ENTRYPOINT ["openworks-worker"]
