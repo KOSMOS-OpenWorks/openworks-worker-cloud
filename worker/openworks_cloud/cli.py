@@ -8,7 +8,7 @@ import yaml
 
 from openworks.config import clients_from_env
 from openworks.worker import Worker
-from .executors import pandoc, zip as zip_exec, unzip as unzip_exec, test_echo
+from .executors import pandoc, zip as zip_exec, unzip as unzip_exec, test_echo, office2pdf
 
 
 def load_pipelines(dirs: list[str]) -> dict:
@@ -41,6 +41,7 @@ def main():
         "zip-create": zip_exec.execute,
         "unzip": unzip_exec.execute,
         "test-echo": test_echo.execute,
+        "office-to-pdf": office2pdf.execute,
     }
 
     pipelines = load_pipelines(pipeline_dirs) if pipeline_dirs else None
