@@ -16,16 +16,14 @@ fi
 echo ""
 echo "=== Built: ${IMAGE}:${TAG} ==="
 echo ""
-echo "Usage:"
-echo "  podman run --rm ${IMAGE}:${TAG} --help"
 echo ""
-echo "  podman run -d --name openworks-worker \\"
 echo "    ${IMAGE}:${TAG} \\"
-echo "    --url https://cloud.example.com \\"
-echo "    --token <worker-api-token> \\"
-echo "    --pick md-to-pdf,zip-create \\"
-echo "    --capacity 2"
 echo ""
-echo "Push:"
-echo "  podman push ${IMAGE}:${TAG}"
-echo "  podman tag ${IMAGE}:${TAG} ${IMAGE}:latest && podman push ${IMAGE}:latest"
+
+if [ -n "${PUSH_TOKEN:-}" ]; then
+    buildah push --creds="token:${PUSH_TOKEN}" "${IMAGE}:${TAG}"
+    buildah tag "${IMAGE}:${TAG}" "${IMAGE}:latest"
+    buildah push --creds="token:${PUSH_TOKEN}" "${IMAGE}:latest"
+fi
+
+echo "=== Built: ${IMAGE}:${TAG} ==="
