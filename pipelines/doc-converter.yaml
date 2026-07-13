@@ -28,10 +28,7 @@ pipelines:
     icon: "file-pdf"
     source_types:
       - "text/vnd.mermaid"
-      - "application/x-mermaid"
-    source_extensions:
-      - ".mmd"
-      - ".mermaid"
+      - "application/vnd.chipnuts.karaoke-mmd"
     shares:
       type: "parentDir"
     job:
