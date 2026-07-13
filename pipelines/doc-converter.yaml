@@ -23,6 +23,25 @@ pipelines:
       location: "same"
     notification: "toast"
 
+  mmd-to-pdf:
+    label: "Diagramm als PDF"
+    icon: "file-pdf"
+    source_types:
+      - "text/vnd.mermaid"
+      - "application/x-mermaid"
+    source_extensions:
+      - ".mmd"
+      - ".mermaid"
+    shares:
+      type: "parentDir"
+    job:
+      type: "mmd-to-pdf"
+      timeout: 60s
+    target:
+      extension: ".pdf"
+      location: "same"
+    notification: "toast"
+
   md-to-pdf:
     label: "Markdown als PDF"
     icon: "file-pdf"

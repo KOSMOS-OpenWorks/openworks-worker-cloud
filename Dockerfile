@@ -10,7 +10,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     unzip \
     git \
+    nodejs \
+    npm \
+    chromium \
     && rm -rf /var/lib/apt/lists/*
+
+# mermaid-cli (mmdc) for diagram-to-PDF conversion
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+RUN npm install -g @mermaid-js/mermaid-cli
 
 WORKDIR /app
 
