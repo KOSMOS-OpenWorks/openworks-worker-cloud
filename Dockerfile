@@ -18,7 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # mermaid renderer: jsdom + @napi-rs/canvas (headless, no browser needed)
-RUN npm install -g mermaid@11 jsdom@26 @napi-rs/canvas@0.1
+WORKDIR /opt/mermaid
+RUN npm init -y && npm install mermaid@11 jsdom@26 @napi-rs/canvas@0.1
 
 # cairosvg for SVG-to-PDF conversion
 RUN pip install --no-cache-dir cairosvg
@@ -31,8 +32,8 @@ RUN pip install --no-cache-dir git+https://codeberg.org/kosmos-openworks/openwor
 COPY worker/ /app/
 RUN pip install --no-cache-dir -e .
 
-# Mermaid render script
-COPY mermaid-render.mjs /app/mermaid-render.mjs
+# Mermaid render script (lives with its node_modules)
+COPY mermaid-render.mjs /opt/mermaid/mermaid-render.mjs
 
 COPY pipelines/ /app/pipelines/
 

@@ -12,7 +12,7 @@ import cairosvg
 
 from openworks.fs import JobFS
 
-RENDER_SCRIPT = "/app/mermaid-render.mjs"
+RENDER_SCRIPT = "/opt/mermaid/mermaid-render.mjs"
 
 
 def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stage=None) -> dict:
