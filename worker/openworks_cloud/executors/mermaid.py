@@ -1,17 +1,22 @@
 """Mermaid executor — converts .mmd/.mermaid diagrams to PDF.
 
-Uses mmdc (mermaid-cli) with chrome-headless-shell for offline rendering.
+Renders Mermaid to SVG headlessly (jsdom + @napi-rs/canvas, no browser),
+then converts SVG to PDF with cairosvg.
 """
 
 import os
 import subprocess
 import tempfile
 
+import cairosvg
+
 from openworks.fs import JobFS
+
+RENDER_SCRIPT = "/app/mermaid-render.mjs"
 
 
 def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stage=None) -> dict:
-    """Convert a Mermaid diagram to PDF using mmdc."""
+    """Convert a Mermaid diagram to PDF via SVG."""
     out_fs = dest_fs or fs
 
     filename = params.get("origin_filename", "")
@@ -27,22 +32,27 @@ def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stag
     with tempfile.TemporaryDirectory(prefix=f"openworks-{job_id}-") as tmpdir:
         local_in = os.path.join(tmpdir, filename)
         base_name = os.path.splitext(filename)[0]
-        local_out = os.path.join(tmpdir, f"{base_name}.pdf")
+        svg_path = os.path.join(tmpdir, f"{base_name}.svg")
+        pdf_path = os.path.join(tmpdir, f"{base_name}.pdf")
 
         with open(local_in, "wb") as f:
             f.write(content)
 
-        cmd = [
-            "mmdc",
-            "-i", local_in,
-            "-o", local_out,
-            "-b", "white",
-            "--pdfFit",
-        ]
+        # Mermaid → SVG (headless, no browser)
+        result = subprocess.run(
+            ["node", RENDER_SCRIPT, local_in],
+            capture_output=True, timeout=60
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"Mermaid render failed: {result.stderr.decode()[-500:]}")
 
-        subprocess.run(cmd, check=True, capture_output=True, timeout=120)
+        with open(svg_path, "wb") as f:
+            f.write(result.stdout)
 
-        with open(local_out, "rb") as f:
+        # SVG → PDF
+        cairosvg.svg2pdf(bytestring=result.stdout, write_to=pdf_path)
+
+        with open(pdf_path, "rb") as f:
             out_fs.write(f"{base_name}.pdf", f.read())
 
     return {"target": f"{base_name}.pdf"}

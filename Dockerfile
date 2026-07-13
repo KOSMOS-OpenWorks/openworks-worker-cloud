@@ -12,21 +12,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     nodejs \
     npm \
-    # libs needed by chrome-headless-shell
-    libnspr4 libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
-    libdrm2 libxkbcommon0 libgbm1 libasound2 libpango-1.0-0 \
-    libcairo2 libxcomposite1 libxdamage1 libxrandr2 libxshmfence1 \
-    libxfixes3 libx11-xcb1 libxext6 libxss1 libxtst6 \
+    # cairo libs for cairosvg (SVG→PDF)
+    libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 \
     fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
-# mermaid-cli + chrome-headless-shell (~260MB, offline mmd-to-pdf)
-ENV PUPPETEER_SKIP_DOWNLOAD=true
-RUN npm install -g @mermaid-js/mermaid-cli
-RUN npx @puppeteer/browsers install chrome-headless-shell@stable --path /opt/chrome
-# Resolve glob to actual path at build time
-RUN ln -s /opt/chrome/chrome-headless-shell/linux-*/chrome-headless-shell-linux64/chrome-headless-shell /usr/local/bin/chrome-headless-shell
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/local/bin/chrome-headless-shell
+# mermaid renderer: jsdom + @napi-rs/canvas (headless, no browser needed)
+RUN npm install -g mermaid@11 jsdom@26 @napi-rs/canvas@0.1
 
 # cairosvg for SVG-to-PDF conversion
 RUN pip install --no-cache-dir cairosvg
@@ -38,6 +30,9 @@ RUN pip install --no-cache-dir git+https://codeberg.org/kosmos-openworks/openwor
 
 COPY worker/ /app/
 RUN pip install --no-cache-dir -e .
+
+# Mermaid render script
+COPY mermaid-render.mjs /app/mermaid-render.mjs
 
 COPY pipelines/ /app/pipelines/
 
