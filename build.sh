@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE="codeberg.org/kosmos-openworks/openworks-worker-cloud"
+IMAGE="${PUSH_REGISTRY:-codeberg.org}/${PUSH_ORG:-kosmos-openworks}/openworks-worker-cloud"
 TAG="$(date +%Y%m%d-%H%M)"
 
 echo "=== Build openworks-worker: ${IMAGE}:${TAG} ==="
@@ -21,9 +21,10 @@ echo "    ${IMAGE}:${TAG} \\"
 echo ""
 
 if [ -n "${PUSH_TOKEN:-}" ]; then
-    buildah push --creds="token:${PUSH_TOKEN}" "${IMAGE}:${TAG}"
+    CREDS="${PUSH_USER:-token}:${PUSH_TOKEN}"
+    buildah push --creds="$CREDS" "${IMAGE}:${TAG}"
     buildah tag "${IMAGE}:${TAG}" "${IMAGE}:latest"
-    buildah push --creds="token:${PUSH_TOKEN}" "${IMAGE}:latest"
+    buildah push --creds="$CREDS" "${IMAGE}:latest"
 fi
 
 echo "=== Built: ${IMAGE}:${TAG} ==="
