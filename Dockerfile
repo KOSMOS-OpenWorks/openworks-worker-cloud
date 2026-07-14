@@ -27,6 +27,9 @@ RUN npx @puppeteer/browsers install chrome-headless-shell@stable --path /opt/chr
 RUN ln -s $(find /opt/chrome -name chrome-headless-shell -type f) /usr/local/bin/chrome-headless-shell
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/local/bin/chrome-headless-shell
 
+# Puppeteer config for running as root in container
+COPY puppeteer.json /opt/puppeteer.json
+
 WORKDIR /app
 
 # SDK (control client, worker daemon, JobFS)

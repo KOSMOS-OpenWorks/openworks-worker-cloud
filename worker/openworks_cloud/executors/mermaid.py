@@ -42,6 +42,7 @@ def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stag
             "-o", local_out,
             "-b", "white",
             "--pdfFit",
+            "-p", "/opt/puppeteer.json",
         ]
 
         result = subprocess.run(cmd, capture_output=True, timeout=120)
