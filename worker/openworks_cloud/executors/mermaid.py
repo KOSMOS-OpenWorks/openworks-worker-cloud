@@ -5,6 +5,7 @@ then converts SVG to PDF with cairosvg.
 """
 
 import os
+import re
 import subprocess
 import tempfile
 
@@ -13,6 +14,19 @@ import cairosvg
 from openworks.fs import JobFS
 
 RENDER_SCRIPT = "/opt/mermaid/mermaid-render.mjs"
+
+
+def _clean_svg_for_cairo(svg: bytes) -> bytes:
+    """Remove foreignObject elements that contain HTML (cairosvg can't parse them)."""
+    text = svg.decode("utf-8", errors="replace")
+    # Replace foreignObject blocks with simple text fallback
+    text = re.sub(
+        r"<foreignObject[^>]*>.*?</foreignObject>",
+        "",
+        text,
+        flags=re.DOTALL,
+    )
+    return text.encode("utf-8")
 
 
 def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stage=None) -> dict:
@@ -29,10 +43,13 @@ def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stag
         filename = source_info[0].name
         content = fs.read(filename)
 
+    mermaid_text = content.decode("utf-8", errors="replace").strip()
+    if not mermaid_text:
+        raise ValueError(f"Empty mermaid file: {filename}")
+
     with tempfile.TemporaryDirectory(prefix=f"openworks-{job_id}-") as tmpdir:
         local_in = os.path.join(tmpdir, filename)
         base_name = os.path.splitext(filename)[0]
-        svg_path = os.path.join(tmpdir, f"{base_name}.svg")
         pdf_path = os.path.join(tmpdir, f"{base_name}.pdf")
 
         with open(local_in, "wb") as f:
@@ -46,11 +63,10 @@ def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stag
         if result.returncode != 0:
             raise RuntimeError(f"Mermaid render failed: {result.stderr.decode()[-500:]}")
 
-        with open(svg_path, "wb") as f:
-            f.write(result.stdout)
+        svg_data = _clean_svg_for_cairo(result.stdout)
 
         # SVG → PDF
-        cairosvg.svg2pdf(bytestring=result.stdout, write_to=pdf_path)
+        cairosvg.svg2pdf(bytestring=svg_data, write_to=pdf_path)
 
         with open(pdf_path, "rb") as f:
             out_fs.write(f"{base_name}.pdf", f.read())
