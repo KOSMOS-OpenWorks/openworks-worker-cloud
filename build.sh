@@ -25,6 +25,10 @@ if [ -n "${PUSH_TOKEN:-}" ]; then
     buildah push --creds="$CREDS" "${IMAGE}:${TAG}"
     buildah tag "${IMAGE}:${TAG}" "${IMAGE}:latest"
     buildah push --creds="$CREDS" "${IMAGE}:latest"
+elif [[ "${PUSH_REGISTRY:-}" == *"xwork"* ]]; then
+    buildah push --tls-verify=false "${IMAGE}:${TAG}"
+    buildah tag "${IMAGE}:${TAG}" "${IMAGE}:latest"
+    buildah push --tls-verify=false "${IMAGE}:latest"
 fi
 
 echo "=== Built: ${IMAGE}:${TAG} ==="
