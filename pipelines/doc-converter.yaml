@@ -1,5 +1,5 @@
 pipelines:
-  doc-to-pdf:
+  office-to-pdf:
     label: "Als PDF exportieren"
     icon: "file-pdf"
     source_types:
