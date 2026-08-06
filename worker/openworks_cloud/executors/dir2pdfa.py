@@ -14,7 +14,7 @@ import tempfile
 import logging
 
 import requests
-from pypdf import PdfMerger
+from pypdf import PdfWriter, PdfReader
 
 from openworks.fs import JobFS
 
@@ -215,12 +215,14 @@ def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stag
         pdf_parts.sort(key=lambda x: x[0])  # cover first (empty key), then alphabetical
         merged_path = os.path.join(tmpdir, output_name)
 
-        merger = PdfMerger()
+        writer = PdfWriter()
         for _, pdf_path in pdf_parts:
             if os.path.isfile(pdf_path) and os.path.getsize(pdf_path) > 0:
-                merger.append(pdf_path)
-        merger.write(merged_path)
-        merger.close()
+                reader = PdfReader(pdf_path)
+                for page in reader.pages:
+                    writer.add_page(page)
+        with open(merged_path, "wb") as f:
+            writer.write(f)
 
         # --- 6. Upload ---
         stage("uploading", 95)
