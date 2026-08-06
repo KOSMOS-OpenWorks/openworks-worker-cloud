@@ -1,0 +1,14 @@
+pipelines:
+  dir-to-pdfa:
+    label: "Ordner als PDF/A"
+    icon: "file-pdf"
+    source_types: []
+    shares:
+      type: "parentDir"
+    job:
+      type: "dir-to-pdfa"
+      timeout: 1800s
+    target:
+      extension: ".pdf"
+      location: "same"
+    notification: "toast"

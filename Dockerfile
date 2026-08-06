@@ -33,7 +33,7 @@ COPY puppeteer.json /opt/puppeteer.json
 WORKDIR /app
 
 # SDK (control client, worker daemon, JobFS)
-RUN pip install --no-cache-dir git+https://codeberg.org/kosmos-openworks/openworks-sdk.git
+RUN pip install --no-cache-dir git+https://codeberg.org/kosmos-openworks/openworks-sdk.git pypdf
 
 COPY worker/ /app/
 RUN pip install --no-cache-dir -e .

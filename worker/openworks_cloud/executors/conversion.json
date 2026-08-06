@@ -1,0 +1,10 @@
+{
+  ".docx": "collabora", ".doc": "collabora", ".odt": "collabora",
+  ".xlsx": "collabora", ".xls": "collabora", ".ods": "collabora",
+  ".pptx": "collabora", ".ppt": "collabora", ".odp": "collabora",
+  ".rtf": "collabora", ".csv": "collabora", ".txt": "collabora",
+  ".html": "chrome", ".htm": "chrome",
+  ".md": "pandoc",
+  ".mmd": "mermaid", ".mermaid": "mermaid",
+  ".pdf": "copy"
+}

@@ -8,7 +8,7 @@ import yaml
 
 from openworks.config import clients_from_env
 from openworks.worker import Worker
-from .executors import pandoc, zip as zip_exec, unzip as unzip_exec, test_echo, office2pdf, mermaid
+from .executors import pandoc, zip as zip_exec, unzip as unzip_exec, test_echo, office2pdf, mermaid, dir2pdfa
 
 
 def load_pipelines(dirs: list[str]) -> dict:
@@ -43,6 +43,7 @@ def main():
         "test-echo": test_echo.execute,
         "office-to-pdf": office2pdf.execute,
         "mmd-to-pdf": mermaid.execute,
+        "dir-to-pdfa": dir2pdfa.execute,
     }
 
     pipelines = load_pipelines(pipeline_dirs) if pipeline_dirs else None
