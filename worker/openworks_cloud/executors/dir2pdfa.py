@@ -108,6 +108,19 @@ def _make_placeholder(filepath: str, size: int, ext: str, out_path: str, tmpdir:
     _md_to_pdf(md, out_path, tmpdir)
 
 
+def _walk_dir(fs, path):
+    """Recursively list files (Depth:1 per level, no Depth:infinity)."""
+    results = []
+    for entry in fs.ls(path):
+        child_path = path.rstrip("/") + "/" + entry.name
+        if entry.is_dir:
+            results.extend(_walk_dir(fs, child_path))
+        else:
+            entry.path = child_path
+            results.append(entry)
+    return results
+
+
 def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stage=None) -> dict:
     """Walk directory, convert all files, merge into single PDF."""
     stage = on_stage or (lambda s, p=0: None)
@@ -116,13 +129,14 @@ def execute(fs: JobFS, dest_fs: JobFS | None, params: dict, job_id: str, on_stag
     collabora_url = params.get("collabora_url", os.environ.get("COLLABORA_URL", ""))
     folder_name = params.get("origin_filename", "Dokumente")
 
-    # Output filename — this file is excluded from the walk
-    output_name = f"{folder_name}.pdf"
+    # Output next to the folder with timestamp
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    output_name = f"{folder_name}-{timestamp}.pdf"
 
-    # --- 1. Scan ---
+    # --- 1. Scan (inside the folder, Depth:1 per level) ---
     stage("scanning", 5)
-    all_entries = fs.ls("/", recursive=True)
-    files = [e for e in all_entries if not e.is_dir and e.name != output_name]
+    files = _walk_dir(fs, folder_name)
     files.sort(key=lambda e: e.path)
 
     convertible = []
