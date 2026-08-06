@@ -2,7 +2,8 @@ pipelines:
   dir-to-pdfa:
     label: "Ordner als PDF/A"
     icon: "file-pdf"
-    source_types: []
+    source_types:
+      - "*"
     shares:
       type: "parentDir"
     job:
